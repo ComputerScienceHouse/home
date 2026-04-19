@@ -91,6 +91,9 @@ components:
         email:
           type: string
           description: Otherwise known as UPN in Microsoft-land
+        attributes:
+          type: array
+          description: key/value store
 
     UserProfile:
       type: object
