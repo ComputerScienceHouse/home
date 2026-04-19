@@ -20,34 +20,26 @@ type Group = string
 // ID UUID
 type ID = string
 
-// User User object
+// User Resprentation of a User.
 type User struct {
-	DisplayName *string `json:"display_name,omitempty"`
+	Address      *string  `json:"address,omitempty"`
+	Birthday     *float32 `json:"birthday,omitempty"`
+	Blog         *string  `json:"blog,omitempty"`
+	Callsign     *string  `json:"callsign,omitempty"`
+	ClassYear    *int     `json:"class_year,omitempty"`
+	Codeberg     *string  `json:"codeberg,omitempty"`
+	DisplayName  *string  `json:"display_name,omitempty"`
+	DrinkBalance *int     `json:"drink_balance,omitempty"`
 
 	// Email Otherwise known as UPN in Microsoft-land
-	Email     *string  `json:"email,omitempty"`
-	FirstName *string  `json:"first_name,omitempty"`
-	Groups    *[]Group `json:"groups,omitempty"`
-	LastName  *string  `json:"last_name,omitempty"`
-
-	// UserId UUID
-	UserId   *ID     `json:"user_id,omitempty"`
-	Username *string `json:"username,omitempty"`
-}
-
-// UserProfile All the custom/extensible fields for a User. Assume they are nullable unless otherwise specified.
-type UserProfile struct {
-	Address       *string   `json:"address,omitempty"`
-	Birthday      *float32  `json:"birthday,omitempty"`
-	Blog          *string   `json:"blog,omitempty"`
-	Callsign      *string   `json:"callsign,omitempty"`
-	ClassYear     *int      `json:"class_year,omitempty"`
-	Codeberg      *string   `json:"codeberg,omitempty"`
-	DrinkBalance  *int      `json:"drink_balance,omitempty"`
+	Email         *string   `json:"email,omitempty"`
 	Emails        *[]string `json:"emails,omitempty"`
+	FirstName     *string   `json:"first_name,omitempty"`
 	Github        *string   `json:"github,omitempty"`
+	Groups        *[]Group  `json:"groups,omitempty"`
 	HomeDirectory *string   `json:"home_directory,omitempty"`
 	HousingPoints *int      `json:"housing_points,omitempty"`
+	LastName      *string   `json:"last_name,omitempty"`
 	LoginShell    *string   `json:"login_shell,omitempty"`
 	Major         *string   `json:"major,omitempty"`
 	MemberSince   *string   `json:"member_since,omitempty"`
@@ -61,20 +53,27 @@ type UserProfile struct {
 	RoomNumber    *int      `json:"room_number,omitempty"`
 	SlackUid      *string   `json:"slack_uid,omitempty"`
 	Twitter       *string   `json:"twitter,omitempty"`
-	Website       *string   `json:"website,omitempty"`
+
+	// UserId UUID
+	UserId   *ID     `json:"user_id,omitempty"`
+	Username *string `json:"username,omitempty"`
+	Website  *string `json:"website,omitempty"`
+}
+
+// GetUserParams defines parameters for GetUser.
+type GetUserParams struct {
+	// Fields Get fields outside the default fields. May require additional OIDC scopes.
+	Fields *[]interface{} `form:"fields,omitempty" json:"fields,omitempty"`
 }
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Returns a User's profile by ID
-	// (GET /api/v1/userprofile/{id})
-	GetUserProfile(c *gin.Context, id string)
 	// List users
 	// (GET /api/v1/users)
 	GetUsers(c *gin.Context)
 	// Returns a user by ID
 	// (GET /api/v1/users/{id})
-	GetUser(c *gin.Context, id string)
+	GetUser(c *gin.Context, id string, params GetUserParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -85,30 +84,6 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
-
-// GetUserProfile operation middleware
-func (siw *ServerInterfaceWrapper) GetUserProfile(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetUserProfile(c, id)
-}
 
 // GetUsers operation middleware
 func (siw *ServerInterfaceWrapper) GetUsers(c *gin.Context) {
@@ -137,6 +112,17 @@ func (siw *ServerInterfaceWrapper) GetUser(c *gin.Context) {
 		return
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetUserParams
+
+	// ------------- Optional query parameter "fields" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "fields", c.Request.URL.Query(), &params.Fields)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter fields: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -144,7 +130,7 @@ func (siw *ServerInterfaceWrapper) GetUser(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetUser(c, id)
+	siw.Handler.GetUser(c, id, params)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -174,26 +160,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/api/v1/userprofile/:id", wrapper.GetUserProfile)
 	router.GET(options.BaseURL+"/api/v1/users", wrapper.GetUsers)
 	router.GET(options.BaseURL+"/api/v1/users/:id", wrapper.GetUser)
-}
-
-type GetUserProfileRequestObject struct {
-	Id string `json:"id"`
-}
-
-type GetUserProfileResponseObject interface {
-	VisitGetUserProfileResponse(w http.ResponseWriter) error
-}
-
-type GetUserProfile200JSONResponse UserProfile
-
-func (response GetUserProfile200JSONResponse) VisitGetUserProfileResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
 }
 
 type GetUsersRequestObject struct {
@@ -213,7 +181,8 @@ func (response GetUsers200JSONResponse) VisitGetUsersResponse(w http.ResponseWri
 }
 
 type GetUserRequestObject struct {
-	Id string `json:"id"`
+	Id     string `json:"id"`
+	Params GetUserParams
 }
 
 type GetUserResponseObject interface {
@@ -231,9 +200,6 @@ func (response GetUser200JSONResponse) VisitGetUserResponse(w http.ResponseWrite
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// Returns a User's profile by ID
-	// (GET /api/v1/userprofile/{id})
-	GetUserProfile(ctx context.Context, request GetUserProfileRequestObject) (GetUserProfileResponseObject, error)
 	// List users
 	// (GET /api/v1/users)
 	GetUsers(ctx context.Context, request GetUsersRequestObject) (GetUsersResponseObject, error)
@@ -252,33 +218,6 @@ func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareF
 type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
-}
-
-// GetUserProfile operation middleware
-func (sh *strictHandler) GetUserProfile(ctx *gin.Context, id string) {
-	var request GetUserProfileRequestObject
-
-	request.Id = id
-
-	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.GetUserProfile(ctx, request.(GetUserProfileRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetUserProfile")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		ctx.Error(err)
-		ctx.Status(http.StatusInternalServerError)
-	} else if validResponse, ok := response.(GetUserProfileResponseObject); ok {
-		if err := validResponse.VisitGetUserProfileResponse(ctx.Writer); err != nil {
-			ctx.Error(err)
-		}
-	} else if response != nil {
-		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
-	}
 }
 
 // GetUsers operation middleware
@@ -307,10 +246,11 @@ func (sh *strictHandler) GetUsers(ctx *gin.Context) {
 }
 
 // GetUser operation middleware
-func (sh *strictHandler) GetUser(ctx *gin.Context, id string) {
+func (sh *strictHandler) GetUser(ctx *gin.Context, id string, params GetUserParams) {
 	var request GetUserRequestObject
 
 	request.Id = id
+	request.Params = params
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
 		return sh.ssi.GetUser(ctx, request.(GetUserRequestObject))
