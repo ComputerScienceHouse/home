@@ -6,13 +6,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Users handles /api/v1/users
-func (APIServer) Users(ctx *gin.Context) {
-	userID := UserID("test")
+// GetUsers handles /api/v1/users
+func (Server) GetUsers(ctx *gin.Context) {
+	userID := "test"
 	resp := []User{
 		{
 			UserId: &userID,
 		},
 	}
 	ctx.JSON(http.StatusOK, resp)
+}
+
+func (Server) GetUser(ctx *gin.Context, id string) {
+	userID := "test"
+	ctx.JSON(http.StatusOK, User{UserId: &userID})
+}
+
+func (Server) GetUserProfile(ctx *gin.Context, id string) {
+	ctx.JSON(http.StatusOK, UserProfile{})
 }

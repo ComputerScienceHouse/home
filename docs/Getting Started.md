@@ -3,14 +3,17 @@
 ## Prerequisites
 
 **Required:**
-- [Docker](https://docs.docker.com/get-docker/) - Container runtime
+
+- [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/get-started) - Container runtime
 - [Go 1.25.3+](https://go.dev/doc/install) - For code generation
 - [Make](https://www.gnu.org/software/make/) - Build automation (usually pre-installed on Linux/macOS)
 
 **Optional (for frontend development):**
+
 - [Node.js 25+](https://nodejs.org/) - For rapid frontend iteration
 
 **New to these technologies?**
+
 - [Docker Getting Started Guide](https://docs.docker.com/get-started/)
 - [Makefile Tutorial](https://makefiletutorial.com/)
 - [Go by Example](https://gobyexample.com/)
@@ -35,14 +38,14 @@
    make build
    make run
    ```
-
 4. **Access the application**
-   - Open `http://localhost:8080` in a browser
-   - API available at `http://localhost:8080/api/v1/*`
+    - Open `http://localhost:8080` in a browser
+    - API available at `http://localhost:8080/api/v1/*`
 
-## Docker-First Development
+## Container-First Development
 
-This project uses Docker for all builds and deployments. The Dockerfile handles:
+This project uses containers for all builds and deployments. The Containerfile handles:
+
 - Installing Go dependencies
 - Building the frontend with Node/Vite
 - Copying built frontend to `server/web/`
@@ -54,46 +57,58 @@ This project uses Docker for all builds and deployments. The Dockerfile handles:
 All commands are defined in the `Makefile`.
 
 ### Build
+
 ```bash
 make build
 ```
-Builds the Docker image tagged as `csh-home`. This runs the full build process: frontend compilation, Go code generation, and binary compilation with embedded assets.
+
+Builds the container image tagged as `csh-home`. This runs the full build process: frontend compilation, Go code
+generation, and binary compilation with embedded assets.
 
 ### Run
+
 ```bash
 make run
 ```
+
 Runs the containerized application. Loads environment variables from `.env` file and exposes port 8080.
 
 ### Generate
+
 ```bash
 make generate
 ```
-Runs `go generate ./...` to regenerate `api/gen.go` from `api/openapi.yaml`. **Run this after modifying the OpenAPI specification.**
+
+Runs `go generate ./...` to regenerate `api/gen.go` from `api/openapi.yaml`. **Run this after modifying the OpenAPI
+specification.**
 
 ### Format
+
 ```bash
 make fmt
 ```
+
 Formats all Go code using `go fmt`. Run before committing changes.
 
 ### Lint
+
 ```bash
 make lint
 ```
-Runs `golangci-lint` for Go code and `npm run lint` for frontend code. Both run in Docker containers.
+
+Runs `golangci-lint` for Go code and `npm run lint` for frontend code. Both run in containers.
 
 ## Modifying the API
 
 1. Edit `api/openapi.yaml` to add/change endpoints
 2. Run `make generate` to regenerate Go code
 3. Implement handler methods in `api/server_*.go`
-4. Run `make build` to create a new Docker image
+4. Run `make build` to create a new container image
 5. Run `make run` to test changes
 
 ## Rapid Frontend Development
 
-For faster frontend iteration without rebuilding the Docker image:
+For faster frontend iteration without rebuilding the container image:
 
 1. **Start the backend container**
    ```bash
@@ -107,9 +122,11 @@ For faster frontend iteration without rebuilding the Docker image:
    npm run dev
    ```
 
-The Vite dev server runs on `http://localhost:5173` (typically) with hot module reloading. All API requests (`/api/*`) are automatically proxied to the Docker container running the backend at `http://localhost:8080`. This allows rapid frontend changes without rebuilding the entire application.
+The Vite dev server runs on `http://localhost:5173` (typically) with hot module reloading. All API requests (`/api/*`)
+are automatically proxied to the container running the backend at `http://localhost:8080`. This allows rapid
+frontend changes without rebuilding the entire application.
 
-When frontend work is complete, run `make build` to create a production Docker image with the embedded frontend.
+When frontend work is complete, run `make build` to create a production container image with the embedded frontend.
 
 ## Useful Resources
 

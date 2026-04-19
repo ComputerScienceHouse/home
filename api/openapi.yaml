@@ -3,9 +3,9 @@ info:
   title: CSH Home overview
   version: alpha
 paths:
-  /api/v1/user:
+  /api/v1/users:
     get:
-      operationId: Users
+      operationId: GetUsers
       summary: List users
       responses:
         200:
@@ -18,16 +18,180 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/User"
+
+  /api/v1/users/{id}:
+    get:
+      operationId: GetUser
+      summary: Returns a user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /api/v1/userprofile/{id}:
+    get:
+      operationId: GetUserProfile
+      summary: Returns a User's profile by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+
+
+
 components:
   schemas:
-    UserID:
+    ID:
       type: string
-      description: ID of user
+      description: UUID
       pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
       example: 1066d8cd-cf62-4024-ae3e-df8550cd6b71
+
     User:
-      description: User object
       type: object
+      description: User object
       properties:
         user_id:
-          $ref: "#/components/schemas/UserID"
+          $ref: "#/components/schemas/ID"
+        username:
+          type: string
+          example: "jeffmahoney"
+        first_name:
+          type: string
+          example: "Jeffrey"
+        last_name:
+          type: string
+          example: "Mahoney"
+        display_name:
+          type: string
+          example: "Jeff Mahoney (REAL)"
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/Group"
+        email:
+          type: string
+          description: Otherwise known as UPN in Microsoft-land
+
+    UserProfile:
+      type: object
+      description: All the custom/extensible fields for a User. Assume they are nullable unless otherwise specified.
+      properties:
+        rit_username:
+          type: string
+          example: abc1234
+          nullable: false
+        class_year:
+          type: integer
+          example: 1970
+        major:
+          type: string
+          example: Cybersecurity B.S.
+        minor:
+          type: string
+          example: Mathematics
+        housing_points:
+          type: integer
+          example: 0
+        drink_balance:
+          type: integer
+          example: 8720
+        room_number:
+          type: integer
+          example: 3038
+        member_since:
+          type: string
+          example: 20230918195013.126954-0500
+        birthday:
+          type: number
+          example: 20040221
+        slack_uid:
+          type: string
+          example: UJ127DN6CZ
+        pronouns:
+          type: string
+          example: they/them
+        login_shell:
+          type: string
+          example: /bin/sh
+        home_directory:
+          type: string
+          example: /users/0/root
+        callsign:
+          type: string
+          example: K8ERS
+        public_keys:
+          type: array
+          items:
+            type: string
+        emails:
+          type: array
+          items:
+            type: string
+        phone_number:
+          type: array
+          items:
+            type: string
+        address:
+          type: string
+        #social media goes below this point
+        website:
+          type: string
+          example: https://rit.edu
+        blog:
+          type: string
+          example: https://blog.rit.edu
+        resume_url:
+          type: string
+          example: https://csh.rit.edu/not-my-resume.pdf
+        plex:
+          type: string
+          example: csh
+        twitter:
+          type: string
+          example: "@ComputerScienceHouse"
+        github:
+          type: string
+          example: "@ComputerScienceHouse"
+        codeberg:
+          type: string
+          example: "@ComputerScienceHouse"
+
+
+
+
+
+
+
+
+
+
+
+
+    Group:
+      type: string
+      description: A group / role for a User
+      example: current_student
+
+
+
+

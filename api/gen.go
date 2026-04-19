@@ -10,23 +10,71 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/oapi-codegen/runtime"
 	strictgin "github.com/oapi-codegen/runtime/strictmiddleware/gin"
 )
 
+// Group A group / role for a User
+type Group = string
+
+// ID UUID
+type ID = string
+
 // User User object
 type User struct {
-	// UserId ID of user
-	UserId *UserID `json:"user_id,omitempty"`
+	DisplayName *string `json:"display_name,omitempty"`
+
+	// Email Otherwise known as UPN in Microsoft-land
+	Email     *string  `json:"email,omitempty"`
+	FirstName *string  `json:"first_name,omitempty"`
+	Groups    *[]Group `json:"groups,omitempty"`
+	LastName  *string  `json:"last_name,omitempty"`
+
+	// UserId UUID
+	UserId   *ID     `json:"user_id,omitempty"`
+	Username *string `json:"username,omitempty"`
 }
 
-// UserID ID of user
-type UserID = string
+// UserProfile All the custom/extensible fields for a User. Assume they are nullable unless otherwise specified.
+type UserProfile struct {
+	Address       *string   `json:"address,omitempty"`
+	Birthday      *float32  `json:"birthday,omitempty"`
+	Blog          *string   `json:"blog,omitempty"`
+	Callsign      *string   `json:"callsign,omitempty"`
+	ClassYear     *int      `json:"class_year,omitempty"`
+	Codeberg      *string   `json:"codeberg,omitempty"`
+	DrinkBalance  *int      `json:"drink_balance,omitempty"`
+	Emails        *[]string `json:"emails,omitempty"`
+	Github        *string   `json:"github,omitempty"`
+	HomeDirectory *string   `json:"home_directory,omitempty"`
+	HousingPoints *int      `json:"housing_points,omitempty"`
+	LoginShell    *string   `json:"login_shell,omitempty"`
+	Major         *string   `json:"major,omitempty"`
+	MemberSince   *string   `json:"member_since,omitempty"`
+	Minor         *string   `json:"minor,omitempty"`
+	PhoneNumber   *[]string `json:"phone_number,omitempty"`
+	Plex          *string   `json:"plex,omitempty"`
+	Pronouns      *string   `json:"pronouns,omitempty"`
+	PublicKeys    *[]string `json:"public_keys,omitempty"`
+	ResumeUrl     *string   `json:"resume_url,omitempty"`
+	RitUsername   *string   `json:"rit_username,omitempty"`
+	RoomNumber    *int      `json:"room_number,omitempty"`
+	SlackUid      *string   `json:"slack_uid,omitempty"`
+	Twitter       *string   `json:"twitter,omitempty"`
+	Website       *string   `json:"website,omitempty"`
+}
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Returns a User's profile by ID
+	// (GET /api/v1/userprofile/{id})
+	GetUserProfile(c *gin.Context, id string)
 	// List users
-	// (GET /api/v1/user)
-	Users(c *gin.Context)
+	// (GET /api/v1/users)
+	GetUsers(c *gin.Context)
+	// Returns a user by ID
+	// (GET /api/v1/users/{id})
+	GetUser(c *gin.Context, id string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -38,8 +86,19 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
-// Users operation middleware
-func (siw *ServerInterfaceWrapper) Users(c *gin.Context) {
+// GetUserProfile operation middleware
+func (siw *ServerInterfaceWrapper) GetUserProfile(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -48,7 +107,44 @@ func (siw *ServerInterfaceWrapper) Users(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.Users(c)
+	siw.Handler.GetUserProfile(c, id)
+}
+
+// GetUsers operation middleware
+func (siw *ServerInterfaceWrapper) GetUsers(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetUsers(c)
+}
+
+// GetUser operation middleware
+func (siw *ServerInterfaceWrapper) GetUser(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetUser(c, id)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -78,19 +174,55 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/api/v1/user", wrapper.Users)
+	router.GET(options.BaseURL+"/api/v1/userprofile/:id", wrapper.GetUserProfile)
+	router.GET(options.BaseURL+"/api/v1/users", wrapper.GetUsers)
+	router.GET(options.BaseURL+"/api/v1/users/:id", wrapper.GetUser)
 }
 
-type UsersRequestObject struct {
+type GetUserProfileRequestObject struct {
+	Id string `json:"id"`
 }
 
-type UsersResponseObject interface {
-	VisitUsersResponse(w http.ResponseWriter) error
+type GetUserProfileResponseObject interface {
+	VisitGetUserProfileResponse(w http.ResponseWriter) error
 }
 
-type Users200JSONResponse []User
+type GetUserProfile200JSONResponse UserProfile
 
-func (response Users200JSONResponse) VisitUsersResponse(w http.ResponseWriter) error {
+func (response GetUserProfile200JSONResponse) VisitGetUserProfileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUsersRequestObject struct {
+}
+
+type GetUsersResponseObject interface {
+	VisitGetUsersResponse(w http.ResponseWriter) error
+}
+
+type GetUsers200JSONResponse []User
+
+func (response GetUsers200JSONResponse) VisitGetUsersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserRequestObject struct {
+	Id string `json:"id"`
+}
+
+type GetUserResponseObject interface {
+	VisitGetUserResponse(w http.ResponseWriter) error
+}
+
+type GetUser200JSONResponse User
+
+func (response GetUser200JSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
@@ -99,9 +231,15 @@ func (response Users200JSONResponse) VisitUsersResponse(w http.ResponseWriter) e
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Returns a User's profile by ID
+	// (GET /api/v1/userprofile/{id})
+	GetUserProfile(ctx context.Context, request GetUserProfileRequestObject) (GetUserProfileResponseObject, error)
 	// List users
-	// (GET /api/v1/user)
-	Users(ctx context.Context, request UsersRequestObject) (UsersResponseObject, error)
+	// (GET /api/v1/users)
+	GetUsers(ctx context.Context, request GetUsersRequestObject) (GetUsersResponseObject, error)
+	// Returns a user by ID
+	// (GET /api/v1/users/{id})
+	GetUser(ctx context.Context, request GetUserRequestObject) (GetUserResponseObject, error)
 }
 
 type StrictHandlerFunc = strictgin.StrictGinHandlerFunc
@@ -116,15 +254,17 @@ type strictHandler struct {
 	middlewares []StrictMiddlewareFunc
 }
 
-// Users operation middleware
-func (sh *strictHandler) Users(ctx *gin.Context) {
-	var request UsersRequestObject
+// GetUserProfile operation middleware
+func (sh *strictHandler) GetUserProfile(ctx *gin.Context, id string) {
+	var request GetUserProfileRequestObject
+
+	request.Id = id
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.Users(ctx, request.(UsersRequestObject))
+		return sh.ssi.GetUserProfile(ctx, request.(GetUserProfileRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "Users")
+		handler = middleware(handler, "GetUserProfile")
 	}
 
 	response, err := handler(ctx, request)
@@ -132,8 +272,60 @@ func (sh *strictHandler) Users(ctx *gin.Context) {
 	if err != nil {
 		ctx.Error(err)
 		ctx.Status(http.StatusInternalServerError)
-	} else if validResponse, ok := response.(UsersResponseObject); ok {
-		if err := validResponse.VisitUsersResponse(ctx.Writer); err != nil {
+	} else if validResponse, ok := response.(GetUserProfileResponseObject); ok {
+		if err := validResponse.VisitGetUserProfileResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUsers operation middleware
+func (sh *strictHandler) GetUsers(ctx *gin.Context) {
+	var request GetUsersRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUsers(ctx, request.(GetUsersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUsers")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetUsersResponseObject); ok {
+		if err := validResponse.VisitGetUsersResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUser operation middleware
+func (sh *strictHandler) GetUser(ctx *gin.Context, id string) {
+	var request GetUserRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUser(ctx, request.(GetUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUser")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetUserResponseObject); ok {
+		if err := validResponse.VisitGetUserResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

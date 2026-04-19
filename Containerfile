@@ -23,6 +23,7 @@ COPY server/ server/
 # Copy built frontend folder from frontend build stage
 COPY --from=npm-build /npm-build/web/dist server/web
 
+#RUN go generate ./...
 RUN CGO_ENABLED=0 GOOS=linux go build --ldflags '-extldflags "-static"' -o home .
 
 ##

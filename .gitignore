@@ -1,3 +1,7 @@
 /home
 /.env
 /server/web
+/api/gen.go
+
+/.idea/
+/web/node_modules
