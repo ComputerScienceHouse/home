@@ -82,13 +82,13 @@ components:
           items:
             $ref: "#/components/schemas/Group"
           nullable: false
-        member_since:
-          type: string
-          example: 20230918195013.126954-0500
-          nullable: false
         email:
           type: string
           description: Otherwise known as UPN in Microsoft-land
+          nullable: false
+        member_since:
+          type: string
+          example: 20230918195013.126954-0500
           nullable: false
         login_shell:
           type: string
@@ -168,17 +168,14 @@ components:
         codeberg:
           type: string
           example: "@ComputerScienceHouse"
-
-
-
-
-
-
-
-
-
-
-
+      example:
+        user_id: 1066d8cd-cf62-4024-ae3e-df8550cd6b71
+        username: jeffmahoney
+        first_name: Jeff
+        last_name: Mahoney
+        display_name: Jeff Mahoney (REAL)
+        email: jeffmahoney@csh.rit.edu
+        groups: ["current_student", "active", "member", "coop-fall"]
 
     Group:
       type: string
