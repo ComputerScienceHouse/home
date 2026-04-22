@@ -3,13 +3,13 @@ package server
 import (
 	"embed"
 	"errors"
-	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/ComputerScienceHouse/home/api"
+	cshauth "github.com/computersciencehouse/csh-auth"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
@@ -57,18 +57,18 @@ func handleStatic(c *gin.Context) {
 }
 
 func Serve() error {
-	// Handle environment vars
-	host, hostSet := os.LookupEnv("HOST")
-	port, portSet := os.LookupEnv("PORT")
 
-	if !hostSet {
-		host = "0.0.0.0"
-		log.Warn().Msgf("HOST environment variable not set, defaulting to %s", host)
-	}
-	if !portSet {
-		port = "8080"
-		log.Warn().Msgf("PORT environment variable not set, defaulting to %s", port)
-	}
+	address := os.Getenv("SERVER_URI")
+
+	auth := cshauth.CSHAuth{}
+	auth.Init(os.Getenv("OIDC_ID"),
+		os.Getenv("OIDC_SECRET"),
+		os.Getenv("JWT_SECRET_KEY"),
+		os.Getenv("STATE"),
+		address,
+		address+"/auth/callback",
+		address+"/auth/login",
+		[]string{"profile", "email", "groups"})
 
 	// Create gin router
 	router := gin.New()
@@ -81,14 +81,22 @@ func Serve() error {
 
 	// Handle API routes
 	apiServer := api.NewAPIServer()
-	api.RegisterHandlers(router, apiServer)
+
+	router.GET("/auth/login", auth.AuthRequest)
+	router.GET("/auth/callback", auth.AuthCallback)
+	router.GET("/auth/logout", auth.AuthLogout)
+
+	api.RegisterHandlersWithOptions(router, apiServer, api.GinServerOptions{
+		Middlewares: []api.MiddlewareFunc{
+			api.MiddlewareFunc(auth.AuthMiddleware()),
+		}})
 
 	// If we haven't explicitly defined a route, default to serving the frontend
 	router.NoRoute(handleStatic)
 
 	s := &http.Server{
 		Handler: router,
-		Addr:    fmt.Sprintf("%s:%s", host, port),
+		Addr:    "0.0.0.0:8080",
 	}
 
 	log.Info().Msgf("Serving at %s", s.Addr)

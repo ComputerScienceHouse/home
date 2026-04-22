@@ -17,3 +17,7 @@ type Server struct{}
 func NewAPIServer() Server {
 	return Server{}
 }
+
+func RegisterMiddleware() {
+
+}

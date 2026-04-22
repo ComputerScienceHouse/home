@@ -36,6 +36,8 @@ paths:
           # TODO: make this schema correct
           schema:
             type: array
+            items:
+              type: string
       responses:
         200:
           description: OK
@@ -182,6 +184,13 @@ components:
       description: A group / role for a User
       example: current_student
 
+  securitySchemes:
+    oidc: # <--- Arbitrary name for the security scheme. Used to refer to it from elsewhere.
+      type: openIdConnect
+      openIdConnectUrl: https://sso.csh.rit.edu/auth/realms/csh/.well-known/openid-configuration
 
+
+security:
+  - oidc: [ ]
 
 

@@ -14,6 +14,10 @@ import (
 	strictgin "github.com/oapi-codegen/runtime/strictmiddleware/gin"
 )
 
+const (
+	OidcScopes = "oidc.Scopes"
+)
+
 // Group A group / role for a User
 type Group = string
 
@@ -63,7 +67,7 @@ type User struct {
 // GetUserParams defines parameters for GetUser.
 type GetUserParams struct {
 	// Fields Get fields outside the default fields. May require additional OIDC scopes.
-	Fields *[]interface{} `form:"fields,omitempty" json:"fields,omitempty"`
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
 }
 
 // ServerInterface represents all server handlers.
@@ -88,6 +92,8 @@ type MiddlewareFunc func(c *gin.Context)
 // GetUsers operation middleware
 func (siw *ServerInterfaceWrapper) GetUsers(c *gin.Context) {
 
+	c.Set(OidcScopes, []string{})
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -111,6 +117,8 @@ func (siw *ServerInterfaceWrapper) GetUser(c *gin.Context) {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
 		return
 	}
+
+	c.Set(OidcScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetUserParams

@@ -29,7 +29,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build --ldflags '-extldflags "-static"' -o home 
 ##
 ## Build runnable container
 ##
-FROM scratch
+FROM docker.io/alpine:3.22.4
 WORKDIR /app
 # Copy built binary from backend build stage
 COPY --from=go-build /go-build/home .

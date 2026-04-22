@@ -17,11 +17,7 @@ func (Server) GetUsers(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
-func (Server) GetUser(ctx *gin.Context, id string) {
+func (Server) GetUser(ctx *gin.Context, id string, params GetUserParams) {
 	userID := "test"
 	ctx.JSON(http.StatusOK, User{UserId: &userID})
-}
-
-func (Server) GetUserProfile(ctx *gin.Context, id string) {
-	ctx.JSON(http.StatusOK, UserProfile{})
 }
