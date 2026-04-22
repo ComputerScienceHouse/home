@@ -10,6 +10,7 @@ import (
 
 	"github.com/ComputerScienceHouse/home/api"
 	cshauth "github.com/computersciencehouse/csh-auth"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
@@ -72,6 +73,9 @@ func Serve() error {
 
 	// Create gin router
 	router := gin.New()
+
+	// Allow CORS
+	router.Use(cors.Default())
 
 	// Setup compression
 	router.Use(gzip.Gzip(gzip.DefaultCompression))

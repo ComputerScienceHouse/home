@@ -17,6 +17,7 @@ func (Server) GetUsers(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
+// GetUser handles /api/v1/user/:id
 func (Server) GetUser(ctx *gin.Context, id string, params GetUserParams) {
 	userID := "test"
 	ctx.JSON(http.StatusOK, User{UserId: &userID})
