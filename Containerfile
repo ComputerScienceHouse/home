@@ -6,7 +6,7 @@
 FROM docker.io/library/node:25-alpine AS npm-build
 WORKDIR /npm-build
 COPY web/ web/
-RUN cd web/ && npm install && npm run build
+RUN cd web/ && npm ci && npm run build
 
 ##
 ## Build backend

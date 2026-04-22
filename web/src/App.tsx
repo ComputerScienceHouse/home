@@ -1,27 +1,23 @@
 import { useState } from 'react';
-import reactLogo from './assets/react.svg';
-import viteLogo from '/vite.svg';
+// import reactLogo from './assets/react.svg';
+// import viteLogo from '/vite.svg';
 import './App.css';
+import 'csh-material-bootstrap/dist/css/csh-material-bootstrap.css';
+import 'csh-material-bootstrap/dist/js/color-modes.js';
+import { Button, Navbar, NavbarBrand } from 'reactstrap';
+import HomeNavbar from './components/Navbar';
 
 function App() {
   const [count, setCount] = useState(0);
-  fetch('/api/v1/user').then((x) => x.json().then((x) => console.log(x)));
+
+  // Note, this doesn't work right now, you have to go to /auth/login first
+  fetch('/api/v1/users/1').then((x) => x.json().then((x) => console.log(x)));
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
-        <p>Skull emoji</p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
+      <HomeNavbar/>
+      <Button onClick={() => setCount(count + 1)}>
+        HI, {count} clicks so far
+      </Button>
     </>
   );
 }
