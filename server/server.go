@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/ComputerScienceHouse/home/api"
-	cshauth "github.com/computersciencehouse/csh-auth"
+	cshauth "github.com/computersciencehouse/csh-auth/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/logger"
@@ -61,15 +61,16 @@ func Serve() error {
 
 	address := os.Getenv("SERVER_URI")
 
-	auth := cshauth.CSHAuth{}
-	auth.Init(os.Getenv("OIDC_ID"),
+	auth, err := cshauth.Init(
+		os.Getenv("OIDC_ID"),
 		os.Getenv("OIDC_SECRET"),
-		os.Getenv("JWT_SECRET_KEY"),
-		os.Getenv("STATE"),
 		address,
 		address+"/auth/callback",
 		address+"/auth/login",
 		[]string{"profile", "email", "groups"})
+	if err != nil {
+		return err
+	}
 
 	// Create gin router
 	router := gin.New()
@@ -86,13 +87,13 @@ func Serve() error {
 	// Handle API routes
 	apiServer := api.NewAPIServer()
 
-	router.GET("/auth/login", auth.AuthRequest)
-	router.GET("/auth/callback", auth.AuthCallback)
-	router.GET("/auth/logout", auth.AuthLogout)
+	router.GET("/auth/login", auth.HandleLogin)
+	router.GET("/auth/callback", auth.HandleCallback)
+	router.GET("/auth/logout", auth.HandleLogout)
 
 	api.RegisterHandlersWithOptions(router, apiServer, api.GinServerOptions{
 		Middlewares: []api.MiddlewareFunc{
-			api.MiddlewareFunc(auth.AuthMiddleware()),
+			api.MiddlewareFunc(auth.HeaderMiddleware()),
 		}})
 
 	// If we haven't explicitly defined a route, default to serving the frontend
