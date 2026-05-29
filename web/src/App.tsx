@@ -2,8 +2,8 @@ import { useState } from 'react';
 // import reactLogo from './assets/react.svg';
 // import viteLogo from '/vite.svg';
 import './App.css';
-import 'csh-material-bootstrap/dist/css/csh-material-bootstrap.css';
-import 'csh-material-bootstrap/dist/js/color-modes.js';
+import 'csh-material-bootstrap/css';
+import 'csh-material-bootstrap/color-modes';
 import { Button, Navbar, NavbarBrand } from 'reactstrap';
 import HomeNavbar from './components/Navbar';
 
